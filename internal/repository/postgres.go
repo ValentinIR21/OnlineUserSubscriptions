@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"onlineusersub/internal/domain"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -53,7 +54,7 @@ func (p *PostgresRepository) Create(ctx context.Context, subscriptions domain.Su
 	return nil
 }
 
-func (p *PostgresRepository) GetOneByID(ctx context.Context, uid string) (domain.Subscriptions, error) {
+func (p *PostgresRepository) GetOneByID(ctx context.Context, id string) (domain.Subscriptions, error) {
 
 	const query = `
 		SELECT 
@@ -63,7 +64,7 @@ func (p *PostgresRepository) GetOneByID(ctx context.Context, uid string) (domain
 	`
 	var subscription domain.Subscriptions
 
-	if err := p.pool.QueryRow(ctx, query, uid).Scan(
+	if err := p.pool.QueryRow(ctx, query, id).Scan(
 		&subscription.ID,
 		&subscription.UserID,
 		&subscription.ServiceName,
@@ -71,7 +72,7 @@ func (p *PostgresRepository) GetOneByID(ctx context.Context, uid string) (domain
 		&subscription.DateCreated,
 		&subscription.DateConclusion,
 	); err != nil {
-		return domain.Subscriptions{}, fmt.Errorf("Подписка с id %s не найдена: %w", uid, err)
+		return domain.Subscriptions{}, fmt.Errorf("Подписка с id %s не найдена: %w", id, err)
 	}
 
 	return subscription, nil
@@ -158,7 +159,7 @@ func (p *PostgresRepository) ListByUserID(ctx context.Context, uid string) ([]do
 	return subscriptions, nil
 }
 
-func (p *PostgresRepository) GetTotalSum(ctx context.Context, userID, serviceName, from, to string) (int, error) {
+func (p *PostgresRepository) GetTotalSum(ctx context.Context, userID, serviceName string, from, to time.Time) (int, error) {
 
 	const query = `
 		SELECT COALESCE(SUM(price), 0)

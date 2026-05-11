@@ -3,14 +3,16 @@ package repository
 import (
 	"context"
 	"onlineusersub/internal/domain"
+	"time"
 )
 
 type SubRepository interface {
+	Create(ctx context.Context, subscriptions domain.Subscriptions) error
 	GetOneByID(ctx context.Context, uid string) (domain.Subscriptions, error)
 	Update(ctx context.Context, sub domain.Subscriptions) error
 	Delete(ctx context.Context, id string) error
 	ListByUserID(ctx context.Context, uid string) ([]domain.Subscriptions, error)
-	GetTotalSum(ctx context.Context, userID, serviceName, from, to string) (int, error)
+	GetTotalSum(ctx context.Context, userID, serviceName string, from, to time.Time) (int, error)
 }
 
 type Repository interface {
