@@ -120,16 +120,16 @@ func (p *PostgresRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (p *PostgresRepository) ListByUserID(ctx context.Context, uid string) ([]domain.Subscriptions, error) {
+func (p *PostgresRepository) ListBySubs(ctx context.Context) ([]domain.Subscriptions, error) {
 
 	const query = `
 		SELECT 
 			id, user_id, service_name, price, date_created, date_conclusion
 		FROM subscriptions
-		WHERE user_id = $1
+		ORDER BY date_created DESC
 	`
 
-	rows, err := p.pool.Query(ctx, query, uid)
+	rows, err := p.pool.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("Ошибка запроса: %w", err)
 	}

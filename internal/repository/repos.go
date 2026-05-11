@@ -11,7 +11,7 @@ type SubRepository interface {
 	GetOneByID(ctx context.Context, uid string) (domain.Subscriptions, error)
 	Update(ctx context.Context, sub domain.Subscriptions) error
 	Delete(ctx context.Context, id string) error
-	ListByUserID(ctx context.Context, uid string) ([]domain.Subscriptions, error)
+	ListBySubs(ctx context.Context) ([]domain.Subscriptions, error)
 	GetTotalSum(ctx context.Context, userID, serviceName string, from, to time.Time) (int, error)
 }
 

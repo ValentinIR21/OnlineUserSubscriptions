@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"onlineusersub/internal/domain"
 	"onlineusersub/internal/repository"
@@ -15,7 +14,7 @@ import (
 
 type SubService interface {
 	GetSub(ctx context.Context, id string) (domain.Subscriptions, error)
-	GetAllSub(ctx context.Context, uid string) ([]domain.Subscriptions, error)
+	GetAllSub(ctx context.Context) ([]domain.Subscriptions, error)
 	CreateSub(ctx context.Context, sub domain.Subscriptions) error
 	UpdateSub(ctx context.Context, sub domain.Subscriptions) error
 	DeleteSub(ctx context.Context, id string) error
@@ -44,25 +43,25 @@ var (
 // Возвращаение подписки из БД
 func (s *subService) GetSub(ctx context.Context, id string) (domain.Subscriptions, error) {
 
-	order, err := s.repos.GetOneByID(ctx, id)
+	sub, err := s.repos.GetOneByID(ctx, id)
 	if err != nil {
-		log.Printf("(service) Подписка не найдена: %s", id)
+		slog.Info("(service) Подписка не найдена", "id", id)
 		return domain.Subscriptions{}, fmt.Errorf("%w, %s", ErrSubNotFound, id)
 	}
 
-	return order, nil
+	return sub, nil
 }
 
 // Возвращаение всех подписок из БД
-func (s *subService) GetAllSub(ctx context.Context, uid string) ([]domain.Subscriptions, error) {
+func (s *subService) GetAllSub(ctx context.Context) ([]domain.Subscriptions, error) {
 
-	order, err := s.repos.ListByUserID(ctx, uid)
+	subs, err := s.repos.ListBySubs(ctx)
 	if err != nil {
-		log.Printf("(service) Не удалось получить список подписок id: %s", uid)
-		return nil, fmt.Errorf("%w, %s", ErrSubNotFound, uid)
+		slog.Info("(service) Не удалось получить список подписок")
+		return nil, fmt.Errorf("%w", ErrSubNotFound)
 	}
 
-	return order, nil
+	return subs, nil
 }
 
 // Подписка сохранена в БД
@@ -76,7 +75,7 @@ func (s *subService) CreateSub(ctx context.Context, sub domain.Subscriptions) er
 		return fmt.Errorf("%w, %v", ErrSubSaveFailed, err)
 	}
 
-	log.Printf("(service) Подписка %s сохранена в БД", sub.ID)
+	slog.Info("(service) Подписка сохранена в БД", "id", sub.ID)
 
 	return nil
 }
@@ -92,7 +91,7 @@ func (s *subService) UpdateSub(ctx context.Context, sub domain.Subscriptions) er
 		return fmt.Errorf("%w, %v", ErrSubUpdateFailed, err)
 	}
 
-	log.Printf("(service) Подписка %s обновлена", sub.ID)
+	slog.Info("(service) Подписка обновлена", "id", sub.ID)
 
 	return nil
 }
@@ -104,7 +103,7 @@ func (s *subService) DeleteSub(ctx context.Context, id string) error {
 		return fmt.Errorf("%w, %v", ErrDeleteSub, err)
 	}
 
-	log.Printf("(service) Подписка %s удалена", id)
+	slog.Info("(service) Подписка удалена", "id", id)
 
 	return nil
 }
@@ -117,7 +116,7 @@ func (s *subService) GetSumSub(ctx context.Context, userID, serviceName string, 
 		return 0, fmt.Errorf("%w, %v", ErrSubSumFailed, err)
 	}
 
-	log.Printf("(service) Сумма подписок %s = %d", userID, sum)
+	slog.Info("(service) Сумма подписок", "id", "sum", userID, sum)
 
 	return sum, nil
 }
