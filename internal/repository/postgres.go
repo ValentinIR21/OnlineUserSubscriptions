@@ -14,7 +14,7 @@ type PostgresRepository struct {
 	pool *pgxpool.Pool
 }
 
-func NewPostgresRec(ctx context.Context, connString string) (*PostgresRepository, error) {
+func NewPostgresRep(ctx context.Context, connString string) (*PostgresRepository, error) {
 
 	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
