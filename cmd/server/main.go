@@ -16,6 +16,7 @@ import (
 
 func main() {
 
+	// Контекст отменяется при получении SIGINT или SIGTERM
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
@@ -38,6 +39,7 @@ func main() {
 	h := handler.NewSubHandler(subService)
 	router := h.Routes()
 
+	// Метаданные Swagger-документации
 	docs.SwaggerInfo.Title = "Online Subscriptions API"
 	docs.SwaggerInfo.Description = "API"
 	docs.SwaggerInfo.Version = "1.0"
@@ -57,6 +59,7 @@ func main() {
 
 	slog.Info("Сервер запускается", "addr", addr)
 
+	// Запускаем сервер в горутине, чтобы не блокировать ожидание сигнала завершения
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("(main) ошибка запуска сервера", "err", err)
@@ -70,6 +73,7 @@ func main() {
 
 	cancel()
 
+	// Graceful shutdown: даём активным запросам 15 секунд на завершение
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer shutdownCancel()
 

@@ -25,12 +25,14 @@ type subService struct {
 	repos repository.SubRepository
 }
 
+// Создание нового экземплеря сервиса с переданным репозиторием
 func NewSubService(repos repository.SubRepository) SubService {
 	return &subService{
 		repos: repos,
 	}
 }
 
+// Ошибки сервисного слоя
 var (
 	ErrSubNotFound     = errors.New("Подписка не найдена")
 	ErrSubSaveFailed   = errors.New("Ошибка сохранения в БД")
@@ -40,7 +42,7 @@ var (
 	ErrDeleteSub       = errors.New("Ошибка удаления подписки")
 )
 
-// Возвращаение подписки из БД
+// Возвращаение подписки из БД по ID
 func (s *subService) GetSub(ctx context.Context, id string) (domain.Subscriptions, error) {
 
 	sub, err := s.repos.GetOneByID(ctx, id)

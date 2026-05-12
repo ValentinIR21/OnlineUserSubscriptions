@@ -33,16 +33,18 @@ type SubHandler struct {
 	service service.SubService
 }
 
+// Конструктор, принимаюший реализацию SubService
 func NewSubHandler(service service.SubService) *SubHandler {
 	return &SubHandler{service: service}
 }
 
+// Регистрация маршрутов и подключение middleware
 func (s *SubHandler) Routes() chi.Router {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(middleware.Logger)    // логирование каждого запроса
+	r.Use(middleware.Recoverer) // перехват паник и возврат 500 без падения сервиса
 
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("http://localhost:8081/swagger/doc.json"),
@@ -93,6 +95,7 @@ func (s *SubHandler) SubPublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Формат даты
 	layout := "01-2006"
 
 	startDate, err := time.Parse(layout, req.DateCreated)
@@ -101,6 +104,7 @@ func (s *SubHandler) SubPublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// DateConclusion - опционально. Если не передана - остается нулевым значением time.Time
 	var endDate time.Time
 	if req.DateConclusion != "" {
 		endDate, err = time.Parse(layout, req.DateConclusion)
@@ -152,6 +156,7 @@ func (s *SubHandler) SubGetByID(w http.ResponseWriter, r *http.Request) {
 	sub, err := s.service.GetSub(r.Context(), id)
 	if err != nil {
 
+		// Разделяем 404 и 500
 		if errors.Is(err, service.ErrSubNotFound) {
 			writeError(w, "Подписка не найдена", http.StatusNotFound)
 			return
@@ -184,6 +189,7 @@ func (s *SubHandler) SubsGetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Возвращаем пустой массив вместо null в JSON при отсутствии данных
 	if subs == nil {
 		subs = []domain.Subscriptions{}
 	}
@@ -327,7 +333,7 @@ func (s *SubHandler) GetTotalSum(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		endDate = time.Now()
+		endDate = time.Now() // Если конец периода не указан, то считаем до текущего момента
 	}
 
 	sum, err := s.service.GetSumSub(r.Context(), uID, srv, startDate, endDate)

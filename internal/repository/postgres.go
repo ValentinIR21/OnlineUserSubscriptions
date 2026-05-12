@@ -14,6 +14,7 @@ type PostgresRepository struct {
 	pool *pgxpool.Pool
 }
 
+// Создание пула соединений и проверки через ping.
 func NewPostgresRep(ctx context.Context, connString string) (*PostgresRepository, error) {
 
 	pool, err := pgxpool.New(ctx, connString)
@@ -32,8 +33,10 @@ func (p *PostgresRepository) Close() {
 	p.pool.Close()
 }
 
+// Создание новой записи в БД.
 func (p *PostgresRepository) Create(ctx context.Context, subscriptions domain.Subscriptions) (domain.Subscriptions, error) {
 
+	// RETURNING id возвращает сгенерированный UUID
 	const query = `
 		INSERT INTO subscriptions (
 			user_id, service_name, price, date_created, date_conclusion)
@@ -55,6 +58,7 @@ func (p *PostgresRepository) Create(ctx context.Context, subscriptions domain.Su
 	return subscriptions, nil
 }
 
+// Возвращает подпику по ID
 func (p *PostgresRepository) GetOneByID(ctx context.Context, id string) (domain.Subscriptions, error) {
 
 	const query = `
@@ -79,6 +83,7 @@ func (p *PostgresRepository) GetOneByID(ctx context.Context, id string) (domain.
 	return subscription, nil
 }
 
+// Обновляет поля опдиски по ID
 func (p *PostgresRepository) Update(ctx context.Context, sub domain.Subscriptions) error {
 
 	const query = `
@@ -109,6 +114,7 @@ func (p *PostgresRepository) Update(ctx context.Context, sub domain.Subscription
 	return nil
 }
 
+// Удаляет подписку по UUID
 func (p *PostgresRepository) Delete(ctx context.Context, id string) error {
 
 	const query = `DELETE from subscriptions WHERE id = $1`
@@ -117,6 +123,8 @@ func (p *PostgresRepository) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("Ошибка удаления: %w", err)
 	}
+
+	// Проверяем, была ли такая запись в БД
 	if result.RowsAffected() == 0 {
 		return fmt.Errorf("запись с id %s не найдена", id)
 	}
@@ -124,6 +132,7 @@ func (p *PostgresRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+// Возвращает все подписки отсортированные по дате создания (DESC)
 func (p *PostgresRepository) ListBySubs(ctx context.Context) ([]domain.Subscriptions, error) {
 
 	const query = `
@@ -156,6 +165,7 @@ func (p *PostgresRepository) ListBySubs(ctx context.Context) ([]domain.Subscript
 
 	}
 
+	// Проверка на возникновение ошибки во время итерации строк
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("Ошибка итерации строк: %w", err)
 	}
@@ -163,8 +173,10 @@ func (p *PostgresRepository) ListBySubs(ctx context.Context) ([]domain.Subscript
 	return subscriptions, nil
 }
 
+// Возвращает суммарную стоимость подписок пользователя на конкретнный сервис за период
 func (p *PostgresRepository) GetTotalSum(ctx context.Context, userID, serviceName string, from, to time.Time) (int, error) {
 
+	// COALESCE(SUM(price), 0) вернет 0 при остутствии подходящих строк вместо NULL
 	const query = `
 		SELECT COALESCE(SUM(price), 0)
 		FROM subscriptions
