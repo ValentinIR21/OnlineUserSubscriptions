@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"onlineusersub/docs"
 	"onlineusersub/internal/handler"
 	"onlineusersub/internal/repository"
 	"onlineusersub/internal/service"
@@ -36,6 +37,12 @@ func main() {
 	// Handler
 	h := handler.NewSubHandler(subService)
 	router := h.Routes()
+
+	docs.SwaggerInfo.Title = "Online Subscriptions API"
+	docs.SwaggerInfo.Description = "API"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "localhost:8081"
+	docs.SwaggerInfo.BasePath = "/"
 
 	// http server
 	addr := getEnv("HTTP_ADDR", ":8081")

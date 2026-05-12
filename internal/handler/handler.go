@@ -9,10 +9,25 @@ import (
 	"onlineusersub/internal/service"
 	"time"
 
+	_ "onlineusersub/docs"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+type SubRequest struct {
+	UserID         uuid.UUID `json:"user_id"         example:"60601fee-2bf1-4721-ae6f-7636e79a0cba"`
+	ServiceName    string    `json:"service_name"    example:"Yandex Plus"`
+	Price          int       `json:"price"           example:"400"`
+	DateCreated    string    `json:"start_date"      example:"07-2025"`
+	DateConclusion string    `json:"conclusion_date" example:"12-2025"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error" example:"invalid JSON"`
+}
 
 type SubHandler struct {
 	service service.SubService
@@ -28,6 +43,10 @@ func (s *SubHandler) Routes() chi.Router {
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8081/swagger/doc.json"),
+	))
 
 	r.Route("/subscription", func(r chi.Router) {
 		r.Post("/publish", s.SubPublish)
@@ -48,6 +67,17 @@ func (s *SubHandler) Routes() chi.Router {
 }
 
 // Добавление записи в БД
+// SubPublish godoc
+// @Summary      Создать подписку
+// @Description  Добавляет новую запись о подписке пользователя
+// @Tags         subscriptions
+// @Accept       json
+// @Produce      json
+// @Param        request body SubRequest true "Данные подписки"
+// @Success      201  {object}  domain.Subscriptions
+// @Failure      400  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /subscription/publish [post]
 func (s *SubHandler) SubPublish(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
@@ -99,6 +129,17 @@ func (s *SubHandler) SubPublish(w http.ResponseWriter, r *http.Request) {
 }
 
 // Возвращение подписки из БД
+// SubGetByID godoc
+// @Summary      Получить подписку по ID
+// @Description  Возвращает одну запись о подписке по её UUID
+// @Tags         subscriptions
+// @Produce      json
+// @Param        id   path      string  true  "UUID подписки"
+// @Success      200  {object}  domain.Subscriptions
+// @Failure      400  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /subscription/{id} [get]
 func (s *SubHandler) SubGetByID(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
@@ -116,7 +157,7 @@ func (s *SubHandler) SubGetByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		slog.Info("(handler) ошибка GetSub", "id", "err", id, err)
+		slog.Info("(handler) ошибка GetSub", "id", id, "err", err)
 		writeError(w, "Внутреняя ошибка сервера", http.StatusInternalServerError)
 		return
 	}
@@ -126,6 +167,14 @@ func (s *SubHandler) SubGetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // Возвращение всех подписок
+// SubsGetAll godoc
+// @Summary      Список всех подписок
+// @Description  Возвращает все записи о подписках, отсортированные по дате создания
+// @Tags         subscriptions
+// @Produce      json
+// @Success      200  {array}   domain.Subscriptions
+// @Failure      500  {object}  ErrorResponse
+// @Router       /subscriptions [get]
 func (s *SubHandler) SubsGetAll(w http.ResponseWriter, r *http.Request) {
 
 	subs, err := s.service.GetAllSub(r.Context())
@@ -143,6 +192,18 @@ func (s *SubHandler) SubsGetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 // Обновление данных
+// UpdateSubByID godoc
+// @Summary      Обновить подписку
+// @Description  Обновляет данные существующей подписки по UUID
+// @Tags         subscriptions
+// @Accept       json
+// @Produce      json
+// @Param        id      path      string      true  "UUID подписки"
+// @Param        request body      SubRequest  true  "Новые данные подписки"
+// @Success      200     {object}  domain.Subscriptions
+// @Failure      400     {object}  ErrorResponse
+// @Failure      500     {object}  ErrorResponse
+// @Router       /subscription/{id} [patch]
 func (s *SubHandler) UpdateSubByID(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
@@ -178,8 +239,8 @@ func (s *SubHandler) UpdateSubByID(w http.ResponseWriter, r *http.Request) {
 		endDate, err = time.Parse(layout, req.DateConclusion)
 		if err != nil {
 			writeError(w, "invalid JSON date format", http.StatusBadRequest)
+			return
 		}
-		return
 	}
 
 	subscription := domain.Subscriptions{
@@ -201,6 +262,14 @@ func (s *SubHandler) UpdateSubByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // Удаление записи по ID
+// SubsGetAll godoc
+// @Summary      Список всех подписок
+// @Description  Возвращает все записи о подписках, отсортированные по дате создания
+// @Tags         subscriptions
+// @Produce      json
+// @Success      200  {array}   domain.Subscriptions
+// @Failure      500  {object}  ErrorResponse
+// @Router       /subscriptions [get]
 func (s *SubHandler) DeleteByID(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
@@ -222,6 +291,18 @@ func (s *SubHandler) DeleteByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // Возвращение суммы всех подписок пользователя
+// GetTotalSum godoc
+// @Summary      Сумма подписок за период
+// @Description  Считает суммарную стоимость подписок пользователя за выбранный период с фильтрацией по сервису
+// @Tags         subscriptions
+// @Produce      json
+// @Param        user_id  query     string  true   "UUID пользователя"
+// @Param        service  query     string  true   "Название сервиса"
+// @Param        from     query     string  true   "Начало периода (MM-YYYY)"
+// @Param        to       query     string  false  "Конец периода (MM-YYYY), по умолчанию — текущий момент"
+// @Success      200      {object}  int
+// @Failure      400      {object}  ErrorResponse
+// @Router       /subscriptions/sum [get]
 func (s *SubHandler) GetTotalSum(w http.ResponseWriter, r *http.Request) {
 
 	uID := r.URL.Query().Get("user_id")

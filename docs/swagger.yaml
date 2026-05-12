@@ -1,0 +1,196 @@
+definitions:
+  domain.Subscriptions:
+    properties:
+      conclusion_date:
+        type: string
+      id:
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  handler.ErrorResponse:
+    properties:
+      error:
+        example: invalid JSON
+        type: string
+    type: object
+  handler.SubRequest:
+    properties:
+      conclusion_date:
+        example: 12-2025
+        type: string
+      price:
+        example: 400
+        type: integer
+      service_name:
+        example: Yandex Plus
+        type: string
+      start_date:
+        example: 07-2025
+        type: string
+      user_id:
+        example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /subscription/{id}:
+    get:
+      description: Возвращает одну запись о подписке по её UUID
+      parameters:
+      - description: UUID подписки
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Subscriptions'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Получить подписку по ID
+      tags:
+      - subscriptions
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет данные существующей подписки по UUID
+      parameters:
+      - description: UUID подписки
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Новые данные подписки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SubRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Subscriptions'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Обновить подписку
+      tags:
+      - subscriptions
+  /subscription/publish:
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новую запись о подписке пользователя
+      parameters:
+      - description: Данные подписки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SubRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Subscriptions'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Создать подписку
+      tags:
+      - subscriptions
+  /subscriptions:
+    get:
+      description: Возвращает все записи о подписках, отсортированные по дате создания
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Subscriptions'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Список всех подписок
+      tags:
+      - subscriptions
+  /subscriptions/sum:
+    get:
+      description: Считает суммарную стоимость подписок пользователя за выбранный
+        период с фильтрацией по сервису
+      parameters:
+      - description: UUID пользователя
+        in: query
+        name: user_id
+        required: true
+        type: string
+      - description: Название сервиса
+        in: query
+        name: service
+        required: true
+        type: string
+      - description: Начало периода (MM-YYYY)
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: Конец периода (MM-YYYY), по умолчанию — текущий момент
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Сумма подписок за период
+      tags:
+      - subscriptions
+swagger: "2.0"

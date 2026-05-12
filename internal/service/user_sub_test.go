@@ -1,8 +1,5 @@
 package service
 
-// Запуск тестов: go test ./internal/service/...
-// С флагом -v для подробного вывода: go test -v ./internal/service/...
-
 import (
 	"context"
 	"errors"
