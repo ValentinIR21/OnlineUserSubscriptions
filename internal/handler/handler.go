@@ -76,6 +76,7 @@ func (s *SubHandler) SubPublish(w http.ResponseWriter, r *http.Request) {
 		endDate, err = time.Parse(layout, req.DateConclusion)
 		if err != nil {
 			writeError(w, "invalid JSON date format", http.StatusBadRequest)
+			return
 		}
 	}
 
@@ -87,12 +88,13 @@ func (s *SubHandler) SubPublish(w http.ResponseWriter, r *http.Request) {
 		DateConclusion: endDate,
 	}
 
-	if err := s.service.CreateSub(r.Context(), subscription); err != nil {
+	sub, err := s.service.CreateSub(r.Context(), subscription)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, subscription, http.StatusCreated)
+	writeJSON(w, sub, http.StatusCreated)
 
 }
 
@@ -177,6 +179,7 @@ func (s *SubHandler) UpdateSubByID(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			writeError(w, "invalid JSON date format", http.StatusBadRequest)
 		}
+		return
 	}
 
 	subscription := domain.Subscriptions{
@@ -239,7 +242,11 @@ func (s *SubHandler) GetTotalSum(w http.ResponseWriter, r *http.Request) {
 		endDate, err = time.Parse(layout, to)
 		if err != nil {
 			writeError(w, "invalid JSON date format", http.StatusBadRequest)
+			return
 		}
+
+	} else {
+		endDate = time.Now()
 	}
 
 	sum, err := s.service.GetSumSub(r.Context(), uID, srv, startDate, endDate)

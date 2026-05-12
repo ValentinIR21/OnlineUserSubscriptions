@@ -15,7 +15,7 @@ import (
 type SubService interface {
 	GetSub(ctx context.Context, id string) (domain.Subscriptions, error)
 	GetAllSub(ctx context.Context) ([]domain.Subscriptions, error)
-	CreateSub(ctx context.Context, sub domain.Subscriptions) error
+	CreateSub(ctx context.Context, sub domain.Subscriptions) (domain.Subscriptions, error)
 	UpdateSub(ctx context.Context, sub domain.Subscriptions) error
 	DeleteSub(ctx context.Context, id string) error
 	GetSumSub(ctx context.Context, userID, serviceName string, from, to time.Time) (int, error)
@@ -65,19 +65,20 @@ func (s *subService) GetAllSub(ctx context.Context) ([]domain.Subscriptions, err
 }
 
 // Подписка сохранена в БД
-func (s *subService) CreateSub(ctx context.Context, sub domain.Subscriptions) error {
+func (s *subService) CreateSub(ctx context.Context, sub domain.Subscriptions) (domain.Subscriptions, error) {
 
 	if err := validateSub(sub); err != nil {
-		return fmt.Errorf("%w, %v", ErrInvalidSub, err)
+		return domain.Subscriptions{}, fmt.Errorf("%w, %v", ErrInvalidSub, err)
 	}
 
-	if err := s.repos.Create(ctx, sub); err != nil {
-		return fmt.Errorf("%w, %v", ErrSubSaveFailed, err)
+	sub, err := s.repos.Create(ctx, sub)
+	if err != nil {
+		return domain.Subscriptions{}, fmt.Errorf("%w, %v", ErrSubSaveFailed, err)
 	}
 
 	slog.Info("(service) Подписка сохранена в БД", "id", sub.ID)
 
-	return nil
+	return sub, nil
 }
 
 // Обновление подписки
@@ -116,7 +117,7 @@ func (s *subService) GetSumSub(ctx context.Context, userID, serviceName string, 
 		return 0, fmt.Errorf("%w, %v", ErrSubSumFailed, err)
 	}
 
-	slog.Info("(service) Сумма подписок", "id", "sum", userID, sum)
+	slog.Info("(service) Сумма подписок", "id", userID, "sum", sum)
 
 	return sum, nil
 }

@@ -32,26 +32,27 @@ func (p *PostgresRepository) Close() {
 	p.pool.Close()
 }
 
-func (p *PostgresRepository) Create(ctx context.Context, subscriptions domain.Subscriptions) error {
+func (p *PostgresRepository) Create(ctx context.Context, subscriptions domain.Subscriptions) (domain.Subscriptions, error) {
 
 	const query = `
 		INSERT INTO subscriptions (
 			user_id, service_name, price, date_created, date_conclusion)
 		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
 	`
 
-	_, err := p.pool.Exec(ctx, query,
+	err := p.pool.QueryRow(ctx, query,
 		subscriptions.UserID,
 		subscriptions.ServiceName,
 		subscriptions.Price,
 		subscriptions.DateCreated,
 		subscriptions.DateConclusion,
-	)
+	).Scan(&subscriptions.ID)
 	if err != nil {
-		return fmt.Errorf("Ошибка сохранения в БД %w", err)
+		return domain.Subscriptions{}, fmt.Errorf("Ошибка сохранения в БД %w", err)
 	}
 
-	return nil
+	return subscriptions, nil
 }
 
 func (p *PostgresRepository) GetOneByID(ctx context.Context, id string) (domain.Subscriptions, error) {
@@ -112,9 +113,12 @@ func (p *PostgresRepository) Delete(ctx context.Context, id string) error {
 
 	const query = `DELETE from subscriptions WHERE id = $1`
 
-	_, err := p.pool.Exec(ctx, query, id)
+	result, err := p.pool.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("Ошибка удаления: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("запись с id %s не найдена", id)
 	}
 
 	return nil

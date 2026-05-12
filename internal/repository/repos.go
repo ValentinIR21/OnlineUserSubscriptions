@@ -7,7 +7,7 @@ import (
 )
 
 type SubRepository interface {
-	Create(ctx context.Context, subscriptions domain.Subscriptions) error
+	Create(ctx context.Context, subscriptions domain.Subscriptions) (domain.Subscriptions, error)
 	GetOneByID(ctx context.Context, uid string) (domain.Subscriptions, error)
 	Update(ctx context.Context, sub domain.Subscriptions) error
 	Delete(ctx context.Context, id string) error
